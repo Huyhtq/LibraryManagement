@@ -7,6 +7,7 @@ public class BorrowerMapper {
 
     // Entity → DTO
     public static BorrowerDTO toDTO(Borrower borrower) {
+        if (borrower == null) return null;
         return BorrowerDTO.builder()
                 .id(borrower.getId())
                 .name(borrower.getName())
@@ -18,6 +19,7 @@ public class BorrowerMapper {
 
     // DTO → Entity
     public static Borrower toEntity(BorrowerDTO dto) {
+        if (dto == null) return null;
         return Borrower.builder()
                 .id(dto.getId())
                 .name(dto.getName())

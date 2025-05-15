@@ -1,0 +1,37 @@
+    <!-- Sidebar -->
+    <div id="sidebar" class="d-flex flex-column flex-shrink-0 text-white" th:fragment="sidebar">
+        <div class="p-3 d-flex align-items-center justify-content-between">
+            <img th:src="@{/images/main-logo64 1.svg}" class="img-fluid img" alt="Logo">
+            <span class="text-white fw-bold fs-4">Library Management</span>
+            <button class="btn btn-sm d-block d-lg-none" id="sidebarclose">
+                <iconify-icon icon="mdi:hamburger-menu-back" class="text-white" width="24" height="24"></iconify-icon>
+            </button>
+        </div>
+        <hr class="mt-0 mb-2">
+        <ul class="nav flex-column mb-auto px-2">
+            <li class="nav-item">
+                <a th:href="@{/home}" class="nav-link sidebar-link py-3 active">
+                    <iconify-icon icon="material-symbols:speed-outline" width="24" height="24"></iconify-icon> 
+                    Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a th:href="@{/books}" class="nav-link sidebar-link py-3 active">
+                    <iconify-icon icon="mdi:book-open-variant" width="24" height="24"></iconify-icon> 
+                    Books
+                </a>
+            </li>
+            <li class="nav-item">
+                <a th:href="@{/borrowers}" class="nav-link sidebar-link py-3 active">
+                    <iconify-icon icon="mdi:account-group-outline" width="24" height="24"></iconify-icon> 
+                    Borrowers
+                </a>
+            </li>
+            <li class="nav-item">
+                <a th:href="@{/records}" class="nav-link sidebar-link py-3 active">
+                    <iconify-icon icon="mdi:file-document-outline" width="24" height="24"></iconify-icon> 
+                    Records
+                </a>
+            </li>
+        </ul>
+    </div>

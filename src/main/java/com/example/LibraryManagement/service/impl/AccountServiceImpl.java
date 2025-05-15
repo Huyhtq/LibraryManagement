@@ -16,7 +16,6 @@ import lombok.*;
 public class AccountServiceImpl implements AccountService {
 
     private final AccountRepository accountRepository;
-    private final AccountMapper accountMapper;
 
     @Override
     public AccountDTO register(RegisterRequestDTO request) {
@@ -26,7 +25,7 @@ public class AccountServiceImpl implements AccountService {
                 .displayName(request.getDisplayName())
                 .title(request.getTitle())
                 .build();
-        return accountMapper.toDTO(accountRepository.save(account));
+        return AccountMapper.toDTO(accountRepository.save(account));
     }
 
     @Override
@@ -34,7 +33,7 @@ public class AccountServiceImpl implements AccountService {
         Account account = accountRepository
                 .findByUsernameAndPassword(request.getUsername(), request.getPassword())
                 .orElseThrow(() -> new RuntimeException("Invalid credentials"));
-        return accountMapper.toDTO(account);
+        return AccountMapper.toDTO(account);
     }
 
     @Override
@@ -42,7 +41,13 @@ public class AccountServiceImpl implements AccountService {
         Account account = accountRepository
                 .findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Account not found"));
-        return accountMapper.toDTO(account);
+        return AccountMapper.toDTO(account);
+    }
+
+    @Override
+    public Account getEntityByUsername(String username){
+        return accountRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
     }
 }
 

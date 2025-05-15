@@ -1,4 +1,4 @@
-package com.example.LibraryManagement.controller;
+package com.example.LibraryManagement.controller.api;
 
 import com.example.LibraryManagement.dto.BorrowerDTO;
 import com.example.LibraryManagement.service.BorrowerService;
@@ -9,12 +9,12 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/borrowers")
-public class BorrowerController {
+public class BorrowerApiController {
 
     private final BorrowerService borrowerService;
 
     @Autowired
-    public BorrowerController(BorrowerService borrowerService) {
+    public BorrowerApiController(BorrowerService borrowerService) {
         this.borrowerService = borrowerService;
     }
 

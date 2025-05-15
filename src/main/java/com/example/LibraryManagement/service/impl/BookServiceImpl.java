@@ -4,6 +4,7 @@ import com.example.LibraryManagement.repository.BookRepository;
 import com.example.LibraryManagement.dto.BookDTO;
 import com.example.LibraryManagement.mapper.BookMapper;
 import com.example.LibraryManagement.entity.Book;
+import com.example.LibraryManagement.service.BookService;
 
 import org.springframework.stereotype.Service;
 import java.util.*;
@@ -12,7 +13,7 @@ import lombok.*;
 
 @Service
 @RequiredArgsConstructor
-public class BookServiceImpl {
+public class BookServiceImpl implements BookService {
 
     private final BookRepository bookRepository;
 

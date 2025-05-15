@@ -1,0 +1,43 @@
+
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login | LibMag</title>
+    <link rel="stylesheet" th:href="@{/css/login.css}" />
+</head>
+<body>
+<div class="container">
+    <div class="login-box">
+        <!-- Logo + Text -->
+        <div class="logo-inline">
+            <img src="/images/book-bookmark.png" alt="Logo" class="logo-icon" />
+            <span class="brand-name">LibMag</span>
+        </div>
+        <p class="subtitle">Sign in to your account</p>
+
+        <!-- Error Message -->
+        <div th:if="${error}" class="error" th:text="${error}"></div>
+
+        <!-- Form -->
+        <form th:action="@{/loginPage}" method="post" th:object="${loginRequest}">
+
+            <div class="input-group">
+                <span class="input-icon">👤</span>
+                <input type="text" th:field="*{username}" placeholder="Enter your username" required />
+            </div>
+
+            <div class="input-group">
+                <span class="input-icon">🔒</span>
+                <input type="password" th:field="*{password}" placeholder="Enter your password" required />
+            </div>
+
+            <button type="submit" class="submit-btn">Sign in</button>
+        </form>
+    </div>
+
+    <footer class="footer">Library Management</footer>
+</div>
+</body>
+</html>

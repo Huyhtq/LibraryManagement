@@ -3,6 +3,9 @@ package com.example.LibraryManagement.dto;
 import lombok.*;
 import java.util.Date;
 
+import com.example.LibraryManagement.entity.Book;
+import com.example.LibraryManagement.entity.Borrower;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -14,4 +17,7 @@ public class RecordsDTO {
     private Date borrowDate;
     private Date returnDate;
     private Integer status;
+    private Book book;       
+    private Borrower borrower;
 }
+

@@ -1,4 +1,4 @@
-package com.example.LibraryManagement.controller;
+package com.example.LibraryManagement.controller.api;
 
 import com.example.LibraryManagement.service.BookService;
 import com.example.LibraryManagement.dto.BookDTO;
@@ -9,12 +9,12 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/books")
-public class BookController {
+public class BookApiController {
 
     private final BookService bookService;
 
     @Autowired
-    public BookController(BookService bookService) {
+    public BookApiController(BookService bookService) {
         this.bookService = bookService;
     }
 

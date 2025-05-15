@@ -1,4 +1,4 @@
-package com.example.LibraryManagement.controller;
+package com.example.LibraryManagement.controller.api;
 
 import com.example.LibraryManagement.dto.AccountDTO;
 import com.example.LibraryManagement.dto.LoginRequestDTO;
@@ -12,7 +12,7 @@ import lombok.*;
 @RestController
 @RequestMapping("/api/account")
 @RequiredArgsConstructor
-public class AccountController {
+public class AccountApiController {
 
     private final AccountService accountService;
 
