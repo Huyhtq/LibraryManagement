@@ -2,12 +2,19 @@
 <html xmlns:th="http://www.thymeleaf.org">
     <div th:replace="layout :: layout">
         <div th:fragment="content">
-            <div class="container-fluid px-lg-4">
-                <div class="py-4">
-                    <h5 class="mb-0">Borrowers List</h5>
-                    <p class="mb-0 text-muted d-none d-md-block">
-                        Welcome, <span th:text="${accountDTO?.username} ?: 'Guest'"></span>! Manage your borrowers here.
-                    </p>
+            <!-- Main Content Area -->
+            <div class="container-fluid p-4">
+                <!-- Page Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h1 class="h3 mb-0 text-dark">Borrowers List</h1>
+                        <p class="text-muted">Manage your borrowers here.</p>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <a th:href="@{/borrowers/new}" class="btn btn-success">
+                            <i class="bi bi-plus-circle me-1"></i> Add Book
+                        </a>
+                    </div>
                 </div>
                 
                 <!-- Search and Filter -->
@@ -17,7 +24,7 @@
                             <div class="col-12">
                                 <div class="position-relative">
                                     <iconify-icon icon="material-symbols:search" width="20" height="20" class="position-absolute top-50 start-0 translate-middle-y ms-2"></iconify-icon>
-                                    <input type="text" id="searchInput" class="form-control ps-5 shadow-none" placeholder="Search books by title, author, ID...">
+                                    <input type="text" id="searchInput" class="form-control ps-5 shadow-none" placeholder="Search borrower by ID, name, email...">
                                 </div>
                             </div>
                         </div>
@@ -47,20 +54,28 @@
                                         <th class="py-3">Name</th>
                                         <th class="py-3">Email</th>
                                         <th class="py-3">Phone</th>
-                                        <th class="py-3">Borrow Counl</th>
+                                        <th class="py-3">Borrow Count</th>
                                         <th class="py-3 text-end pe-4">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr th:each="borrower : ${borrowers}">
-                                        <td th:text="${borrower.id}">ID</td>
+                                        <td class="ps-4" th:text="${borrower.id}">ID</td>
                                         <td th:text="${borrower.name}">Name</td>
                                         <td th:text="${borrower.email}">Email</td>
                                         <td th:text="${borrower.phone}">Phone</td>
                                         <td th:text="${borrower.borrowCount}">Borrow Count</td>
-                                        <td>
-                                            <a th:href="@{/borrowers/edit/{id}(id=${borrower.id})}" class="btn btn-warning btn-sm">Edit</a>
-                                            <a th:href="@{/borrowers/delete/{id}(id=${borrower.id})}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</a>
+                                        <td class="text-end pe-4">
+                                            <div class="btn-group">
+                                                <a th:href="@{/borrowers/edit/{id}(id=${borrower.id})}" class="btn btn-sm btn-outline-secondary">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <a th:href="@{/borrowers/delete/{id}(id=${borrower.id})}" 
+                                                class="btn btn-sm btn-outline-danger"
+                                                onclick="return confirm('Are you sure you want to delete this borrower?')">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                     <tr th:if="${#lists.isEmpty(borrowers)}">
@@ -70,40 +85,49 @@
                                         </td>
                                     </tr>
                                 </tbody>
-                    </table>
-                </div>
-
-                <!-- Grid View -->
-                <div class="grid-view row" style="display: none;">
-                    <div class="col-md-4 mb-3" th:each="borrower : ${borrowers}">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 th:text="${borrower.name}"></h5>
-                                <p class="mb-1"><strong>Email:</strong> <span th:text="${borrower.email}"></span></p>
-                                <p class="mb-1"><strong>Phone:</strong> <span th:text="${borrower.phone}"></span></p>
-                                <p class="mb-1"><strong>Borrow Count:</strong> <span th:text="${borrower.borrowCount}"></span></p>
-                                <div class="mt-2">
-                                    <a th:href="@{/borrowers/edit/{id}(id=${borrower.id})}" class="btn btn-warning btn-sm">Edit</a>
-                                    <a th:href="@{/borrowers/delete/{id}(id=${borrower.id})}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</a>
+                            </table>
+                        </div>
+                                
+                        <!-- Grid View -->
+                        <div class="grid-view" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-4 mb-3" th:each="borrower : ${borrowers}">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h5 th:text="${borrower.name}"></h5>
+                                            <p class="mb-1"><strong>Email:</strong> <span th:text="${borrower.email}"></span></p>
+                                            <p class="mb-1"><strong>Phone:</strong> <span th:text="${borrower.phone}"></span></p>
+                                            <p class="mb-1"><strong>Borrow Count:</strong> <span th:text="${borrower.borrowCount}"></span></p>
+                                            <div class="btn-group">
+                                                <a th:href="@{/borrowers/edit/{id}(id=${borrower.id})}" class="btn btn-sm btn-outline-secondary">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <a th:href="@{/borrowers/delete/{id}(id=${borrower.id})}" 
+                                                class="btn btn-sm btn-outline-danger"
+                                                onclick="return confirm('Are you sure you want to delete this borrower?')">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-12 text-center py-4" th:if="${#lists.isEmpty(borrowers)}">
-                        <iconify-icon icon="mdi:inbox" class="fs-1 text-muted" width="40" height="40"></iconify-icon>
-                        <p class="mt-2 mb-0">No borrowers found</p>
+
+                    <!-- Entries Info -->
+                    <div class="card-footer">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="text-muted">Showing <span th:text="${#lists.size(borrowers)}">0</span> entries</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-
-                <!-- Entries Info -->
-                <div class="card-footer py-2">
-                    <span class="text-muted">Showing <span th:text="${#lists.size(borrowers)}"></span> entries</span>
-                </div>
-
-                <a href="/borrowers/new" class="btn btn-primary mt-3">Add New Borrower</a>
             </div>
         </div>
 
+        <!-- Custom scripts for this page -->
         <div th:fragment="scripts">
             <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
             <script src="https://cdn.jsdelivr.net/npm/swiper@latest/swiper-bundle.min.js"></script>

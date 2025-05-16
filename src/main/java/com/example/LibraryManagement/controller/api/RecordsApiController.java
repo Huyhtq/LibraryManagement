@@ -2,107 +2,65 @@ package com.example.LibraryManagement.controller.api;
 
 import com.example.LibraryManagement.dto.RecordsDTO;
 import com.example.LibraryManagement.service.RecordsService;
+import lombok.RequiredArgsConstructor;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/records")
+@RequiredArgsConstructor
 public class RecordsApiController {
 
     private final RecordsService recordsService;
-
-    @Autowired
-    public RecordsApiController(RecordsService recordsService) {
-        this.recordsService = recordsService;
-    }
 
     // Get all records with pagination
     @GetMapping
     public ResponseEntity<Page<RecordsDTO>> getAllRecords(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Integer status) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<RecordsDTO> records = recordsService.getAllRecords(pageable);
+        Page<RecordsDTO> records = recordsService.getAllRecords(pageable, search, status);
         return ResponseEntity.ok(records);
-    }
-
-    // Get record by ID
-    @GetMapping("/{id}")
-    public ResponseEntity<RecordsDTO> getRecordById(@PathVariable Long id) {
-        try {
-            RecordsDTO dto = recordsService.getRecordById(id);
-            return ResponseEntity.ok(dto);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        }
     }
 
     // Borrow a book
     @PostMapping("/borrow")
-    public ResponseEntity<RecordsDTO> borrowBook(@RequestParam Long bookId, @RequestParam Long borrowerId) {
+    public ResponseEntity<String> borrowBook(@RequestBody Map<String, Long> payload) {
+        Long borrowerId = payload.get("borrowerId");
+        Long bookId = payload.get("bookId");
+
+        if (borrowerId == null || bookId == null) {
+            return ResponseEntity.badRequest().body("Borrower ID and Book ID are required");
+        }
+
         try {
-            RecordsDTO dto = recordsService.borrowBook(bookId, borrowerId);
-            return ResponseEntity.ok(dto);
+            recordsService.borrowBook(borrowerId, bookId);
+            return ResponseEntity.ok("Book borrowed successfully!");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
     // Return a book
     @PostMapping("/return/{id}")
-    public ResponseEntity<?> returnBook(@PathVariable Long id) {
+    public ResponseEntity<String> returnBook(@PathVariable Long id) {
         try {
             recordsService.returnBook(id);
-            return ResponseEntity.ok().build();
+            return ResponseEntity.ok("Book returned successfully!");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    // Create a new record
-    @PostMapping
-    public ResponseEntity<RecordsDTO> createRecord(@RequestBody RecordsDTO dto) {
-        if (dto.getBookId() == null || dto.getBorrowerId() == null) {
-            return ResponseEntity.badRequest().body(null);
-        }
-        RecordsDTO createdDto = recordsService.createRecord(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdDto);
-    }
-
-    // Update an existing record
-    @PutMapping("/{id}")
-    public ResponseEntity<RecordsDTO> updateRecord(@PathVariable Long id, @RequestBody RecordsDTO dto) {
-        if (!id.equals(dto.getId())) {
-            return ResponseEntity.badRequest().body(null);
-        }
-        try {
-            RecordsDTO updatedDto = recordsService.updateRecord(id, dto);
-            return ResponseEntity.ok(updatedDto);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
-        }
-    }
-
-    // Delete a record
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteRecord(@PathVariable Long id) {
-        try {
-            recordsService.deleteRecord(id);
-            return ResponseEntity.ok().build();
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        }
-    }
-
-    // Get overdue books count
+    // Get overdue records with pagination
     @GetMapping("/overdue")
     public ResponseEntity<Page<RecordsDTO>> getOverdueRecords(
             @RequestParam(defaultValue = "0") int page,
@@ -115,7 +73,7 @@ public class RecordsApiController {
     // Get loans today count
     @GetMapping("/today")
     public ResponseEntity<Long> getLoansToday() {
-        long count = recordsService.getLoansToday(); // Assume added in service
+        long count = recordsService.getLoansToday();
         return ResponseEntity.ok(count);
     }
 }

@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Records page loaded');
+    console.log("DOM loaded");
 
     // Toggle sidebar
     const sidebarToggle = document.getElementById('sidebarToggle');
@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (sidebarToggle) {
         console.log("Sidebar toggle found");
-        sidebarToggle.addEventListener('click', function () {
+        sidebarToggle.addEventListener('click', () => {
             console.log("Toggle clicked");
             sidebar.classList.toggle('hidden');
             content.classList.toggle('expanded');
@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (sidebarClose) {
         console.log("Sidebar close found");
-        sidebarClose.addEventListener('click', function () {
+        sidebarClose.addEventListener('click', () => {
             console.log("Close clicked");
             sidebar.classList.toggle('hidden');
             content.classList.toggle('expanded');
@@ -31,16 +31,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Make sidebar links active
     document.querySelectorAll('.sidebar-link').forEach(link => {
-        link.addEventListener('click', function () {
+        link.addEventListener('click', () => {
             document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-            this.classList.add('active');
+            link.classList.add('active');
         });
     });
 
     const path = window.location.pathname;
-
     document.querySelectorAll('.sidebar-link').forEach(link => {
-        // So sánh đường dẫn hiện tại với href của từng link
         if (link.getAttribute('href') === path) {
             link.classList.add('active');
         } else {
@@ -48,22 +46,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Handle Borrow Form Submission with AJAX
+    // Handle Borrow Form Submission
     const borrowForm = document.getElementById('borrowForm');
     if (borrowForm) {
         borrowForm.addEventListener('submit', async (event) => {
             event.preventDefault();
-
             const formData = new FormData(borrowForm);
+            const borrowerId = formData.get('borrowerId');
+            const bookId = formData.get('bookId');
+
+            if (!borrowerId || !bookId) {
+                alert('Please select both borrower and book.');
+                return;
+            }
+
             const response = await fetch('/api/records/borrow', {
                 method: 'POST',
-                body: formData
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ borrowerId, bookId })
             });
 
             if (response.ok) {
-                const data = await response.json();
                 alert('Book borrowed successfully!');
-                addRecordToTable(data);
+                loadRecords(); // Tải lại danh sách
+                loadLoansToday(); // Cập nhật số lượng mượn hôm nay
                 borrowForm.reset();
             } else {
                 const error = await response.text();
@@ -72,64 +80,208 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Handle Return Button Click with AJAX
-    const returnButtons = document.querySelectorAll('button[th:onclick^="window.location.href"]');
-    returnButtons.forEach(button => {
-        button.addEventListener('click', async (event) => {
-            event.preventDefault();
-            if (confirm('Are you sure you want to return this book?')) {
-                const recordId = button.getAttribute('th:onclick').match(/\/return\/(\d+)/)[1];
-                const response = await fetch(`/api/records/return/${recordId}`, {
-                    method: 'POST'
-                });
-
-                if (response.ok) {
-                    alert('Book returned successfully!');
-                    removeRecordFromTable(recordId);
-                } else {
-                    const error = await response.text();
-                    alert('Error: ' + error);
-                }
-            }
-        });
-    });
-
-    // Load initial records
-    loadRecords();
-
-    // Handle Search and Filter
+    // Record management functionality
     const searchInput = document.getElementById('searchInput');
     const statusFilter = document.getElementById('statusFilter');
-    if (searchInput || statusFilter) {
-        const debouncedFilter = debounce(filterRecords, 300);
-        searchInput?.addEventListener('input', debouncedFilter);
-        statusFilter?.addEventListener('change', debouncedFilter);
-    }
-});
+    const tableBody = document.querySelector('#recordsTableBody');
+    const paginationDiv = document.createElement('div'); // Thêm div cho phân trang
+    paginationDiv.className = 'pagination mt-3 text-center';
+    tableBody.parentElement.appendChild(paginationDiv);
 
-// Load records from API
-async function loadRecords() {
-    const response = await fetch('/api/records');
-    if (response.ok) {
-        const records = await response.json();
-        const tbody = document.getElementById('recordsTableBody');
-        tbody.innerHTML = ''; // Clear existing content
-        if (records.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="7" class="text-center py-4">
-                        <iconify-icon icon="mdi:inbox" class="fs-1 text-muted" width="40" height="40"></iconify-icon>
-                        <p class="mt-2 mb-0">No records found</p>
-                    </td>
-                </tr>
-            `;
-        } else {
-            records.forEach(record => addRecordToTable(record));
+    let currentPage = 0;
+    let totalPages = 0;
+    let currentStatusFilter = 'all';
+    let currentSearchTerm = '';
+
+    // Load loans today count
+    async function loadLoansToday() {
+        try {
+            const response = await fetch('/api/records/today');
+            if (response.ok) {
+                const count = await response.json();
+                const loansTodayElement = document.getElementById('loansToday');
+                if (loansTodayElement) {
+                    loansTodayElement.textContent = `Loans Today: ${count}`;
+                } else {
+                    const header = document.querySelector('.card-header h5');
+                    if (header) {
+                        const countSpan = document.createElement('span');
+                        countSpan.id = 'loansToday';
+                        countSpan.className = 'ms-3 text-muted';
+                        countSpan.textContent = `Loans Today: ${count}`;
+                        header.appendChild(countSpan);
+                    }
+                }
+            } else {
+                const error = await response.text();
+                console.error("Failed to load loans today:", error);
+                alert('Error loading loans today: ' + error);
+            }
+        } catch (e) {
+            console.error("Fetch error:", e);
+            alert('Error loading loans today: ' + e.message);
         }
     }
+
+    // Load records with pagination, search, and status filter
+    async function loadRecords(page = 0) {
+        currentPage = page;
+        const size = 10;
+        let url = `/api/records?page=${page}&size=${size}`;
+
+        if (currentSearchTerm) {
+            url += `&search=${encodeURIComponent(currentSearchTerm)}`;
+        }
+        if (currentStatusFilter !== 'all') {
+            url += `&status=${currentStatusFilter}`;
+        }
+
+        try {
+            const response = await fetch(url);
+            if (response.ok) {
+                const data = await response.json();
+                tableBody.innerHTML = '';
+                totalPages = data.totalPages || 1;
+
+                if (!data.content || data.content.length === 0) {
+                    tableBody.innerHTML = noRecordTemplate("No records found");
+                } else {
+                    data.content.forEach(record => addRecordToTable(record));
+                }
+
+                updatePagination();
+            } else {
+                const error = await response.text();
+                alert('Error loading records: ' + error);
+                tableBody.innerHTML = noRecordTemplate("Failed to load records");
+            }
+        } catch (e) {
+            console.error("Fetch error:", e);
+            alert('Error loading records: ' + e.message);
+            tableBody.innerHTML = noRecordTemplate("Failed to load records");
+        }
+    }
+
+    // Load overdue records
+    async function loadOverdueRecords(page = 0) {
+        const size = 10;
+        const response = await fetch(`/api/records/overdue?page=${page}&size=${size}`);
+        if (response.ok) {
+            const data = await response.json();
+            tableBody.innerHTML = '';
+            totalPages = data.totalPages || 1;
+
+            if (!data.content || data.content.length === 0) {
+                tableBody.innerHTML = noRecordTemplate("No overdue records found");
+            } else {
+                data.content.forEach(record => addRecordToTable(record));
+            }
+
+            updatePagination();
+        } else {
+            console.error("Failed to load overdue records:", response.statusText);
+        }
+    }
+
+    // Add record row to table
+    function addRecordToTable(record) {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="ps-4">${record.id}</td>
+            <td>${record.borrowerName}</td>
+            <td>${record.bookTitle}</td>
+            <td>${formatDate(record.borrowDate)}</td>
+            <td>${formatDate(record.returnDate)}</td>
+            <td>
+                <span class="badge ${record.status === 0 ? 'bg-warning' : 'bg-success'}">
+                    ${record.status === 0 ? 'Borrowed' : 'Returned'}
+                </span>
+            </td>
+            <td class="text-end pe-4">
+                ${record.status === 0 ? `
+                    <button class="btn btn-sm btn-outline-success return-btn" data-id="${record.id}">
+                        <iconify-icon icon="mdi:book-arrow-left" width="16" height="16"></iconify-icon> Return
+                    </button>
+                ` : ''}
+            </td>
+        `;
+        tableBody.appendChild(row);
+
+        const returnButton = row.querySelector('.return-btn');
+        if (returnButton) {
+            returnButton.addEventListener('click', async () => {
+                if (confirm('Are you sure you want to return this book?')) {
+                    const id = returnButton.getAttribute('data-id');
+                    const response = await fetch(`/api/records/return/${id}`, {
+                        method: 'POST'
+                    });
+
+                    if (response.ok) {
+                        alert('Book returned successfully!');
+                        row.remove();
+                        loadRecords(currentPage);
+                        loadLoansToday();
+                    } else {
+                        const error = await response.text();
+                        alert('Error: ' + error);
+                    }
+                }
+            });
+        }
+    }
+
+    // Update pagination controls
+    function updatePagination() {
+        paginationDiv.innerHTML = '';
+        if (totalPages <= 1) return;
+
+        const prevButton = document.createElement('button');
+        prevButton.className = 'btn btn-outline-primary mx-1';
+        prevButton.textContent = 'Previous';
+        prevButton.disabled = currentPage === 0;
+        prevButton.addEventListener('click', () => loadRecords(currentPage - 1));
+        paginationDiv.appendChild(prevButton);
+
+        const pageInfo = document.createElement('span');
+        pageInfo.className = 'mx-2';
+        pageInfo.textContent = `Page ${currentPage + 1} of ${totalPages}`;
+        paginationDiv.appendChild(pageInfo);
+
+        const nextButton = document.createElement('button');
+        nextButton.className = 'btn btn-outline-primary mx-1';
+        nextButton.textContent = 'Next';
+        nextButton.disabled = currentPage >= totalPages - 1;
+        nextButton.addEventListener('click', () => loadRecords(currentPage + 1));
+        paginationDiv.appendChild(nextButton);
+    }
+
+    // Event listeners for search and filter
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(() => {
+            currentSearchTerm = searchInput.value.toLowerCase();
+            loadRecords(0); // Reset về trang đầu khi tìm kiếm
+        }, 300));
+    }
+
+    if (statusFilter) {
+        statusFilter.addEventListener('change', () => {
+            currentStatusFilter = statusFilter.value;
+            loadRecords(0); // Reset về trang đầu khi lọc
+        });
+    }
+
+    // Initial load
+    loadRecords();
+    loadLoansToday();
+});
+
+// Utilities
+function formatDate(dateStr) {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-// Debounce function to limit search calls
 function debounce(func, wait) {
     let timeout;
     return function (...args) {
@@ -138,101 +290,13 @@ function debounce(func, wait) {
     };
 }
 
-// Filter records
-function filterRecords() {
-    const searchTerm = (document.getElementById('searchInput') || {}).value?.toLowerCase() || '';
-    const status = (document.getElementById('statusFilter') || {}).value || 'all';
-    const rows = document.querySelectorAll('#recordsTableBody tr');
-
-    rows.forEach(row => {
-        const borrower = row.cells[1].textContent.toLowerCase();
-        const book = row.cells[2].textContent.toLowerCase();
-        const statusText = row.cells[5].textContent.toLowerCase();
-        const matchesSearch = borrower.includes(searchTerm) || book.includes(searchTerm);
-        const matchesStatus = status === 'all' || statusText.includes(status === '0' ? 'borrowed' : 'returned');
-
-        row.style.display = matchesSearch && matchesStatus ? '' : 'none';
-    });
-}
-
-// Add record to table
-function addRecordToTable(record) {
-    const tbody = document.getElementById('recordsTableBody');
-    const row = document.createElement('tr');
-    row.innerHTML = `
-        <td class="ps-4">${record.id}</td>
-        <td>${record.borrower.name}</td>
-        <td>${record.book.title}</td>
-        <td>${record.borrow_date ? new Date(record.borrow_date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}</td>
-        <td>${record.return_date ? new Date(record.return_date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}</td>
-        <td>
-            <span class="badge ${record.status === 0 ? 'bg-warning' : 'bg-success'}">${record.status === 0 ? 'Borrowed' : 'Returned'}</span>
-        </td>
-        <td class="text-end pe-4">
-            ${record.status === 0 ? `
-                <button class="btn btn-sm btn-outline-success return-btn" data-id="${record.id}">
-                    <iconify-icon icon="mdi:book-arrow-left" width="16" height="16"></iconify-icon> Return
-                </button>
-            ` : ''}
-        </td>
+function noRecordTemplate(message) {
+    return `
+        <tr>
+            <td colspan="7" class="text-center py-4">
+                <iconify-icon icon="mdi:inbox" class="fs-1 text-muted" width="40" height="40"></iconify-icon>
+                <p class="mt-2 mb-0">${message}</p>
+            </td>
+        </tr>
     `;
-    tbody.appendChild(row);
-
-    // Attach event listener to the return button
-    const returnButton = row.querySelector('.return-btn');
-    if (returnButton) {
-        returnButton.addEventListener('click', async () => {
-            if (confirm('Are you sure you want to return this book?')) {
-                const recordId = returnButton.getAttribute('data-id');
-                const response = await fetch(`/api/records/return/${recordId}`, {
-                    method: 'POST'
-                });
-
-                if (response.ok) {
-                    alert('Book returned successfully!');
-                    removeRecordFromTable(recordId);
-                } else {
-                    const error = await response.text();
-                    alert('Error: ' + error);
-                }
-            }
-        });
-    }
-}
-
-// Remove record from table dynamically
-function removeRecordFromTable(recordId) {
-    const row = document.querySelector(`table tbody tr td:first-child:contains(${recordId})`)?.parentElement;
-    if (row) row.remove();
-}
-
-// Helper function to simulate returnBook (if needed)
-function returnBook(id) {
-    fetch(`/records/return/${id}`, { method: 'GET' })
-        .then(response => response.ok ? alert('Book returned!') : alert('Error!'))
-        .then(() => location.reload())
-        .catch(error => alert('Error: ' + error));
-}
-
-async function loadOverdueRecords(page = 0, size = 10) {
-    const response = await fetch(`/api/records/overdue?page=${page}&size=${size}`);
-    if (response.ok) {
-        const data = await response.json();
-        const tbody = document.getElementById('recordsTableBody');
-        tbody.innerHTML = '';
-        if (data.content.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="7" class="text-center py-4">
-                        <iconify-icon icon="mdi:inbox" class="fs-1 text-muted" width="40" height="40"></iconify-icon>
-                        <p class="mt-2 mb-0">No overdue records found</p>
-                    </td>
-                </tr>
-            `;
-        } else {
-            data.content.forEach(record => addRecordToTable(record));
-        }
-    } else {
-        console.error('Failed to load overdue records:', response.statusText);
-    }
 }

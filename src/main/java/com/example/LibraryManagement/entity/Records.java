@@ -23,10 +23,12 @@ public class Records {
     private Borrower borrower;
 
     @Temporal(TemporalType.DATE)
-    private Date borrow_date;
+    @Column(name = "borrow_date")
+    private Date borrowDate;
 
     @Temporal(TemporalType.DATE)
-    private Date return_date;
+    @Column(name = "return_date")
+    private Date returnDate;
 
     private Integer status;
 }

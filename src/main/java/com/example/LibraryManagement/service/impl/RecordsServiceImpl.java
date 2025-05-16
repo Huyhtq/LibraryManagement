@@ -9,79 +9,66 @@ import com.example.LibraryManagement.entity.Records;
 import com.example.LibraryManagement.entity.Book;
 import com.example.LibraryManagement.entity.Borrower;
 import com.example.LibraryManagement.service.RecordsService;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.Date;
-import java.util.List;
-import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class RecordsServiceImpl implements RecordsService {
 
-    @Autowired
-    private RecordsRepository recordsRepository;
-
-    @Autowired
-    private BookRepository bookRepository;
-
-    @Autowired
-    private BorrowerRepository borrowerRepository;
+    private final RecordsRepository recordsRepository;
+    private final BookRepository bookRepository;
+    private final BorrowerRepository borrowerRepository;
 
     @Override
-    public List<RecordsDTO> getAllRecords() {
-        return recordsRepository.findAllWithDetails().stream()
-                .map(RecordsMapper::toDTO)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public RecordsDTO getRecordById(Long id) {
-        return recordsRepository.findById(id)
-                .map(RecordsMapper::toDTO)
-                .orElseThrow(() -> new IllegalArgumentException("Record with ID " + id + " not found"));
+    public Page<RecordsDTO> getAllRecords(Pageable pageable, String search, Integer status) {
+        if (search != null && !search.isEmpty()) {
+            return recordsRepository.findBySearchTerm(search.toLowerCase(), status, pageable)
+                    .map(RecordsMapper::toDTO);
+        }
+        if (status != null) {
+            return recordsRepository.findByStatus(status, pageable)
+                    .map(RecordsMapper::toDTO);
+        }
+        return recordsRepository.findAllWithDetails(pageable).map(RecordsMapper::toDTO);
     }
 
     @Override
     @Transactional
-    public RecordsDTO createRecord(RecordsDTO dto) {
-        Records record = RecordsMapper.toEntity(dto, bookRepository, borrowerRepository);
+    public void borrowBook(Long bookId, Long borrowerId) {
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new IllegalArgumentException("Book not found"));
+        Borrower borrower = borrowerRepository.findById(borrowerId)
+                .orElseThrow(() -> new IllegalArgumentException("Borrower not found"));
 
-        Book book = record.getBook();
-        Borrower borrower = record.getBorrower();
+        if (book.getQuantity() <= 0) {
+            throw new IllegalStateException("Book is out of stock");
+        }
+
+        Records record = Records.builder()
+                .book(book)
+                .borrower(borrower)
+                .borrowDate(new Date())
+                .status(0)
+                .build();
 
         book.setQuantity(book.getQuantity() - 1);
-        bookRepository.save(book);
-
         borrower.setBorrowCount(borrower.getBorrowCount() + 1);
+
+        recordsRepository.save(record);
+        bookRepository.save(book);
         borrowerRepository.save(borrower);
-
-        return RecordsMapper.toDTO(recordsRepository.save(record));
     }
 
     @Override
     @Transactional
-    public RecordsDTO borrowBook(Long bookId, Long borrowerId) {
-        RecordsDTO dto = RecordsDTO.builder()
-                .bookId(bookId)
-                .borrowerId(borrowerId)
-                .status(0)
-                .borrowDate(new java.sql.Date(System.currentTimeMillis())) // 15/05/2025
-                .build();
-        return createRecord(dto);
-    }
-
-    @Override
-    @Transactional
-    public RecordsDTO updateRecord(Long id, RecordsDTO dto) {
+    public void returnBook(Long id) {
         Records record = recordsRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Record with ID " + id + " not found"));
 
@@ -89,77 +76,30 @@ public class RecordsServiceImpl implements RecordsService {
             throw new IllegalStateException("Book has already been returned");
         }
 
-        record.setStatus(dto.getStatus());
-        if (dto.getStatus() == 1) {
-            record.setReturn_date(new java.sql.Date(System.currentTimeMillis())); // 15/05/2025
+        record.setStatus(1);
+        record.setReturnDate(new Date());
 
-            Book book = bookRepository.findById(record.getBook().getId())
-                    .orElseThrow(() -> new IllegalArgumentException("Book not found"));
-            book.setQuantity(book.getQuantity() + 1);
-            bookRepository.save(book);
+        Book book = record.getBook();
+        book.setQuantity(book.getQuantity() + 1);
 
-            Borrower borrower = borrowerRepository.findById(record.getBorrower().getId())
-                    .orElseThrow(() -> new IllegalArgumentException("Borrower not found"));
-            borrower.setBorrowCount(borrower.getBorrowCount() - 1);
-            borrowerRepository.save(borrower);
-        }
+        Borrower borrower = record.getBorrower();
+        borrower.setBorrowCount(borrower.getBorrowCount() - 1);
 
-        return RecordsMapper.toDTO(recordsRepository.save(record));
-    }
-
-    @Override
-    @Transactional
-    public void returnBook(Long id) {
-        RecordsDTO dto = getRecordById(id);
-        dto.setStatus(1);
-        updateRecord(id, dto);
-    }
-
-    @Override
-    @Transactional
-    public void deleteRecord(Long id) {
-        Records record = recordsRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Record with ID " + id + " not found"));
-
-        if (record.getStatus() == 0) {
-            Book book = bookRepository.findById(record.getBook().getId())
-                    .orElseThrow(() -> new IllegalArgumentException("Book not found"));
-            book.setQuantity(book.getQuantity() + 1);
-            bookRepository.save(book);
-
-            Borrower borrower = borrowerRepository.findById(record.getBorrower().getId())
-                    .orElseThrow(() -> new IllegalArgumentException("Borrower not found"));
-            borrower.setBorrowCount(borrower.getBorrowCount() - 1);
-            borrowerRepository.save(borrower);
-        }
-
-        recordsRepository.deleteById(id);
-    }
-
-    @Override
-    public long getOverdueBooks() {
-        LocalDate today = LocalDate.now(); // 15/05/2025
-        LocalDate overdueDate = today.minusDays(14);
-        Date overdueDateAsDate = Date.from(overdueDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
-        return recordsRepository.countByStatusAndBorrowDateBefore(0, overdueDateAsDate);
-    }
-
-    @Override
-    public Page<RecordsDTO> getAllRecords(Pageable pageable) {
-        return recordsRepository.findAll(pageable).map(RecordsMapper::toDTO);
-    }
-
-    @Override
-    public long getLoansToday() {
-        return recordsRepository.countRecordsByBorrowDate(LocalDate.now()); // 15/05/2025
+        recordsRepository.save(record);
+        bookRepository.save(book);
+        borrowerRepository.save(borrower);
     }
 
     @Override
     public Page<RecordsDTO> getOverdueRecordsPaged(Pageable pageable) {
-        LocalDate today = LocalDate.now(); // 15/05/2025
+        LocalDate today = LocalDate.now();
         LocalDate overdueDate = today.minusDays(14);
-        Date overdueDateAsDate = Date.from(overdueDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
-        return recordsRepository.findOverdueRecordsPaged(0, overdueDateAsDate, pageable)
+        return recordsRepository.findByStatusAndBorrowDateBefore(0, overdueDate, pageable)
                 .map(RecordsMapper::toDTO);
+    }
+
+    @Override
+    public long getLoansToday() {
+        return recordsRepository.countByBorrowDate(LocalDate.now());
     }
 }

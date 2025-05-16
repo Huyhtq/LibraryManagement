@@ -1,10 +1,7 @@
 package com.example.LibraryManagement.dto;
 
 import lombok.*;
-import java.util.Date;
-
-import com.example.LibraryManagement.entity.Book;
-import com.example.LibraryManagement.entity.Borrower;
+import java.time.LocalDate;
 
 @Data
 @NoArgsConstructor
@@ -13,11 +10,11 @@ import com.example.LibraryManagement.entity.Borrower;
 public class RecordsDTO {
     private Long id;
     private Long bookId;
+    private String bookTitle;
     private Long borrowerId;
-    private Date borrowDate;
-    private Date returnDate;
+    private String borrowerName;
+    private LocalDate borrowDate;
+    private LocalDate returnDate;
     private Integer status;
-    private Book book;       
-    private Borrower borrower;
 }
 

@@ -24,9 +24,10 @@ public class BookPageController {
     // <-- Hiển thị form thêm mới -->
     @GetMapping("/new")
     public String showCreateForm(Model model) {
-        model.addAttribute("book", new BookDTO());
+        BookDTO book = new BookDTO();
+        model.addAttribute("book", book);
         model.addAttribute("formTitle", "Add New Book");
-        return "book-form"; // Tên file Thymeleaf: book-form.html
+        return "book-form";
     }
 
     // <-- Hiển thị form chỉnh sửa -->
