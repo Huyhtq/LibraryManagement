@@ -9,8 +9,8 @@ INSERT INTO book (id, title, author, quantity, total) VALUES
     (7, 'Database Basics', 'Thomas Lee', 10, 10),
     (8, 'Algorithms', 'Laura Miller', 10, 10),
     (9, 'Cloud Computing', 'David Clark', 10, 10),
-    (10, 'Software Engineering', 'Anna Taylor', 10, 10);
--- ON CONFLICT (id) DO NOTHING;
+    (10, 'Software Engineering', 'Anna Taylor', 10, 10)
+ON CONFLICT (id) DO NOTHING;
 
 -- Thêm dữ liệu vào bảng borrower 
 INSERT INTO borrower (id, name, email, phone, borrow_count) VALUES
@@ -23,8 +23,8 @@ INSERT INTO borrower (id, name, email, phone, borrow_count) VALUES
     (7, 'Robert Taylor', 'robert.taylor@example.com', '5566778899', 0),
     (8, 'Jennifer White', 'jennifer.white@example.com', '6677889900', 0),
     (9, 'Thomas Clark', 'thomas.clark@example.com', '7788990011', 0),
-    (10, 'Patricia Moore', 'patricia.moore@example.com', '8899001122', 0);
--- ON CONFLICT (id) DO NOTHING;
+    (10, 'Patricia Moore', 'patricia.moore@example.com', '8899001122', 0)
+ON CONFLICT (id) DO NOTHING;
 
 -- Thêm dữ liệu vào bảng account 
 INSERT INTO account (id, username, password, display_name, title) VALUES
@@ -32,5 +32,5 @@ INSERT INTO account (id, username, password, display_name, title) VALUES
     (2, 'user1', 'pass456', 'User One', 'User'),
     (3, 'user2', 'pass789', 'User Two', 'User'),
     (4, 'admin2', 'admin789', 'Administrator Two', 'Admin'),
-    (5, 'user3', 'user123', 'User Three', 'User');
--- ON CONFLICT (id) DO NOTHING;
+    (5, 'user3', 'user123', 'User Three', 'User')
+ON CONFLICT (id) DO NOTHING;

@@ -12,7 +12,7 @@
                     </div>
                     <div class="d-flex align-items-center">
                         <a th:href="@{/borrowers/new}" class="btn btn-success">
-                            <i class="bi bi-plus-circle me-1"></i> Add Book
+                            <i class="bi bi-plus-circle me-1"></i> Add Borrower
                         </a>
                     </div>
                 </div>
@@ -64,7 +64,7 @@
                                         <td th:text="${borrower.name}">Name</td>
                                         <td th:text="${borrower.email}">Email</td>
                                         <td th:text="${borrower.phone}">Phone</td>
-                                        <td th:text="${borrower.borrowCount}">Borrow Count</td>
+                                        <td th:text="${borrower.borrowCount != null ? borrower.borrowCount : 0}">Borrow Count</td>
                                         <td class="text-end pe-4">
                                             <div class="btn-group">
                                                 <a th:href="@{/borrowers/edit/{id}(id=${borrower.id})}" class="btn btn-sm btn-outline-secondary">
@@ -97,7 +97,11 @@
                                             <h5 th:text="${borrower.name}"></h5>
                                             <p class="mb-1"><strong>Email:</strong> <span th:text="${borrower.email}"></span></p>
                                             <p class="mb-1"><strong>Phone:</strong> <span th:text="${borrower.phone}"></span></p>
-                                            <p class="mb-1"><strong>Borrow Count:</strong> <span th:text="${borrower.borrowCount}"></span></p>
+                                            <p class="mb-1">
+                                                <strong>Borrow Count:</strong>
+                                                <span th:text="${borrower.borrowCount != null ? borrower.borrowCount : 0}"></span>
+                                            </p>
+
                                             <div class="btn-group">
                                                 <a th:href="@{/borrowers/edit/{id}(id=${borrower.id})}" class="btn btn-sm btn-outline-secondary">
                                                     <i class="bi bi-pencil"></i>

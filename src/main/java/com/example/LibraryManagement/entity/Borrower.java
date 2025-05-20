@@ -18,7 +18,7 @@ public class Borrower {
     private String email;
     private String phone;
 
-    @Column(name = "borrow_count", columnDefinition = "integer default 0")
+    @Column(name = "borrow_count"/*, columnDefinition = "integer default 0"*/)
     private Integer borrowCount;
 
 }
